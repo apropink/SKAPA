@@ -51,6 +51,8 @@ test('MCS seeded reference, sample accounting, CI and truncated-normal moments',
   assert.equal(r.histogram.reduce((a,b)=>a+b,0)+r.underflow+r.overflow,100000);
   close(r.moments.Hs.mean,5,.012);close(r.moments.N.mean,513.812,.9);
   assert.equal(r.convergence.at(-1).count,r.count);assert.equal(r.convergence.at(-1).failed,r.failed);
+  for(const point of r.convergence){assert.ok(point.lower>=0&&point.lower<=point.pf&&point.upper>=point.pf&&point.upper<=1);}
+  close(r.convergence.at(-1).lower,r.lower,1e-12);close(r.convergence.at(-1).upper,r.upper,1e-12);
 });
 test('Monte.m DN=5 preset and deterministic seeded repeatability',async()=>{
   const a=await R.monteCarlo({...p,DN:5},1000,2026),b=await R.monteCarlo({...p,DN:5},1000,2026);
