@@ -62,3 +62,18 @@ test('invalid physical samples never produce a reported conditional Pf',async()=
   const cov=p.cov.slice();cov[3]=100;const r=await R.monteCarlo({...p,cov},1000,2026);
   assert.ok(r.invalid>0);assert.equal(r.pf,null);assert.equal(r.lower,null);
 });
+test('automatic sample plan retains pilot samples and continues the same random stream',async()=>{
+  const auto=await R.monteCarlo(p,30000,2026,()=>{},{auto:true,tolerance:.006});
+  assert.equal(auto.plan.pilotCount,10000);assert.ok(auto.count>10000&&auto.count<=30000);
+  const manual=await R.monteCarlo(p,auto.count,2026);
+  assert.equal(auto.failed,manual.failed);close(auto.moments.Hs.mean,manual.moments.Hs.mean,1e-12);
+  assert.equal(auto.convergence.find(v=>v.count===10000).failed,auto.plan.pilotFailed);
+  const capped=await R.monteCarlo(p,10000,2026,()=>{},{auto:true,tolerance:.0001});
+  assert.ok(capped.plan.capped);assert.ok(capped.achievedHalfWidth>capped.plan.tolerance);
+});
+test('histogram automatically covers MATLAB preset instead of showing an empty fixed range',async()=>{
+  const matlab={...p,Hs:.6,T:8.96,hp:6.771,Dn:.6,cot:1.5,BM:2,BMp:2};
+  const m=await R.monteCarlo(matlab,1000,2026);
+  assert.ok(m.histMax>2);assert.ok(m.histogram.reduce((a,b)=>a+b,0)>900);
+  assert.equal(m.histogram.reduce((a,b)=>a+b,0)+m.underflow+m.overflow,m.count);
+});

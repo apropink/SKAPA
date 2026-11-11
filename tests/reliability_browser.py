@@ -14,6 +14,8 @@ with sync_playwright() as pw:
  page.goto(f'http://127.0.0.1:{server.server_port}/SKAPA_Reliability_Design_v0.1.0.html')
  assert page.locator('#target').input_value()=='5'
  page.click('#tabLevel3');assert page.locator('#panelLevel2').is_hidden()
+ assert page.locator('#samplingMode').input_value()=='auto'
+ page.select_option('#samplingMode','manual')
  page.click('#thesisPreset');page.fill('#samples','1000');page.click('#calculate');page.wait_for_function("!document.getElementById('mcs').disabled",timeout=60000)
  assert page.locator('#mcsCharts').is_visible();assert page.locator('#mcsComparePanel').is_hidden()
  with page.expect_download() as info:page.click('#mcsCsv')
@@ -28,7 +30,7 @@ with sync_playwright() as pw:
  assert page.locator('#mcsCharts').is_visible()
  assert page.locator('#mcsConvergence polygon[data-ci="95"]').count()==1
  assert page.locator('#mcsConvergence circle title').count()==100
- assert page.locator('#mcsHistogram rect title').count()==40
+ assert page.locator('#mcsHistogram rect title').count()>=40
  assert page.locator('#mcsComparison path[data-ci="95"]').count()==1
  assert '45.956%' in page.locator('#mcsComparison').text_content()
  assert page.locator('#mcsCharts').evaluate("e=>!e.innerHTML.includes('NaN')")
@@ -52,6 +54,11 @@ with sync_playwright() as pw:
  print('Monte.m',page.locator('#mcsResult').inner_text())
  page.click('#tabLevel2');page.click('#matlabPreset');page.click('#calculate');assert page.locator('#statusText').inner_text()=='AFDA 수렴 완료'
  print('MATLAB',page.locator('#pf').inner_text())
+ page.click('#tabLevel3');page.select_option('#samplingMode','auto');page.fill('#samples','10000');page.fill('#sampleError','0.25');page.click('#mcs');page.wait_for_function("!document.getElementById('mcs').disabled",timeout=60000)
+ assert '10,000' in page.locator('#samplingPlan').inner_text()
+ assert page.locator('#mcsHistogram rect').evaluate_all("els=>els.some(e=>Number(e.getAttribute('height'))>0)")
+ page.locator('#mcsCharts').screenshot(path='/tmp/skapa-reliability-artifacts/SKAPA_Matlab_histogram_fixed.png')
+ page.select_option('#samplingMode','manual');page.click('#tabLevel2')
  page.fill('#cov3','100');page.click('#calculate')
  if page.locator('#mcs').is_enabled():
   page.click('#tabLevel3');page.fill('#samples','1000');page.click('#mcs');page.wait_for_function("!document.getElementById('mcs').disabled",timeout=60000)
